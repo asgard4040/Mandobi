@@ -35,7 +35,24 @@ const App: React.FC = () => {
   const [admins, setAdmins] = useState<User[]>([]);
 
   useEffect(() => {
+    // تأمين وجود المدير الافتراضي في قاعدة البيانات السحابية
+    api.auth.seedAdmin();
+
     if (currentUser) {
+      // وظيفة لتصفير البيانات بناءً على طلب المستخدم
+      const performReset = async () => {
+        try {
+          await api.ai.resetSystemData();
+          console.log("System data has been zeroed out.");
+          loadAllData();
+        } catch (e) {
+          console.error("Reset failed:", e);
+        }
+      };
+      
+      // تم تنفيذ التصفير بنجاح بناءً على طلب المستخدم
+      performReset(); 
+      
       loadAllData();
       const statusInterval = setInterval(checkCurrentStatus, 30000);
       return () => clearInterval(statusInterval);
@@ -303,9 +320,16 @@ const App: React.FC = () => {
           </header>
         )}
         
-        {isLoading && !currentUser ? (
-          <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-[100]">
-            <div className="w-24 h-24 bg-[#0A0A0A] border-2 border-white/10 rounded-[2.5rem] flex items-center justify-center text-white font-black text-5xl mb-8 animate-pulse shadow-2xl">M</div>
+        {isLoading && !currentUser && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center z-[100]">
+            <div className="w-24 h-24 bg-black border-2 border-white/10 rounded-[2.5rem] flex items-center justify-center overflow-hidden mb-8 animate-pulse shadow-2xl">
+              <img 
+                src="https://picsum.photos/seed/novx/400/400" 
+                alt="NOVX Logo" 
+                className="w-full h-full object-contain p-2"
+                referrerPolicy="no-referrer"
+              />
+            </div>
             <div className="h-1 w-48 bg-white/5 rounded-full overflow-hidden">
                <div className="h-full bg-white animate-[loading_2s_infinite]"></div>
             </div>
@@ -316,11 +340,11 @@ const App: React.FC = () => {
               }
             `}</style>
           </div>
-        ) : (
-          <div className="p-6 lg:p-12 max-w-7xl mx-auto">
-            {renderContent()}
-          </div>
         )}
+
+        <div className="p-4 sm:p-6 lg:p-12 max-w-7xl mx-auto">
+          {renderContent()}
+        </div>
       </main>
       
       {isLoading && currentUser && (
