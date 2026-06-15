@@ -33,7 +33,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
              <div className="absolute -inset-6 bg-white opacity-10 blur-3xl rounded-full group-hover:opacity-20 transition-opacity"></div>
              <div className="relative w-36 h-36 bg-[#050505] border-2 border-white/5 rounded-[3.5rem] flex items-center justify-center overflow-hidden shadow-2xl transition-all group-hover:scale-105 group-hover:border-white/20">
                 <img 
-                  src="https://picsum.photos/seed/novx/400/400" 
+                  src="imgs/novx.png" 
                   alt="NOVX Logo" 
                   className="w-full h-full object-contain p-4"
                   referrerPolicy="no-referrer"
