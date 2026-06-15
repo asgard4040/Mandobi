@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { UserRole } from '../types';
-import novx from "./novx.png";
+import novx from "./novx-1.png";
 
 interface LoginProps {
   onLogin: (username: string, password: string, type: 'AGENT' | 'ADMIN') => void;
