@@ -80,10 +80,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, agents, syste
       </div>
 
       {aiInsight && (
-        <div className="bg-[#050505] border border-white/10 p-6 lg:p-10 rounded-[2rem] lg:rounded-[3rem] shadow-2xl animate-in slide-in-from-top duration-700">
+        <div className="bg-[#050505] border border-white/10 p-5 sm:p-8 lg:p-10 rounded-[2rem] lg:rounded-[3rem] shadow-2xl animate-in slide-in-from-top duration-700">
           <div className="flex items-center gap-3 mb-6 lg:mb-8">
             <div className="w-8 h-8 lg:w-10 h-10 bg-white text-black rounded-xl flex items-center justify-center font-black text-xs">AI</div>
-            <h3 className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.4em]">Strategic Recommendations</h3>
+            <h3 className="text-[8px] sm:text-[9px] lg:text-[10px] font-black uppercase tracking-[0.4em]">Strategic Recommendations</h3>
           </div>
           <div className="text-gray-400 text-xs lg:text-sm leading-relaxed whitespace-pre-line font-bold border-r-2 lg:border-r-4 border-white pr-4 lg:pr-8">
             {aiInsight}
@@ -100,7 +100,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, agents, syste
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-[#0A0A0A] p-6 lg:p-10 rounded-[2rem] lg:rounded-[3rem] border border-[#1A1A1A]">
+        <div className="lg:col-span-2 bg-[#0A0A0A] p-5 sm:p-8 lg:p-10 rounded-[2rem] lg:rounded-[3rem] border border-[#1A1A1A]">
           <h3 className="text-[9px] lg:text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-8 lg:mb-12">Weekly Velocity (Real Activity)</h3>
           <div className="h-[250px] lg:h-[350px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -115,7 +115,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, agents, syste
           </div>
         </div>
 
-        <div className="bg-[#0A0A0A] p-6 lg:p-10 rounded-[2rem] lg:rounded-[3rem] border border-[#1A1A1A]">
+        <div className="bg-[#0A0A0A] p-5 sm:p-8 lg:p-10 rounded-[2rem] lg:rounded-[3rem] border border-[#1A1A1A]">
           <h3 className="text-[9px] lg:text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-8 lg:mb-12">Market Tier Distribution</h3>
           <div className="h-[250px] lg:h-[350px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -141,7 +141,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ requests, agents, syste
         </div>
       </div>
 
-      <div className="bg-[#0A0A0A] p-6 lg:p-12 rounded-[2rem] lg:rounded-[4rem] border border-[#1A1A1A]">
+      <div className="bg-[#0A0A0A] p-5 sm:p-8 lg:p-12 rounded-[2rem] lg:rounded-[4rem] border border-[#1A1A1A]">
         <h3 className="text-[9px] lg:text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-8 lg:mb-12">Top Operational Agents</h3>
         <div className="overflow-x-auto -mx-6 lg:mx-0">
           <div className="inline-block min-w-full align-middle px-6 lg:px-0">

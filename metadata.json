@@ -3,5 +3,6 @@
   "description": "منصة شاملة لإدارة المندوبين الميدانيين وتتبع مبيعات الأنظمة البرمجية للمؤسسات التعليمية، تتميز بواجهتين منفصلتين للمندوبين وفريق الإدارة مع نظام تقارير متقدم ودعم كامل للغة العربية.",
   "requestFramePermissions": [
     "geolocation"
-  ]
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -36,22 +36,9 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // تأمين وجود المدير الافتراضي في قاعدة البيانات السحابية
+    api.auth.seedAdmin();
 
     if (currentUser) {
-      // وظيفة لتصفير البيانات بناءً على طلب المستخدم
-      const performReset = async () => {
-        try {
-          await api.ai.resetSystemData();
-          console.log("System data has been zeroed out.");
-          loadAllData();
-        } catch (e) {
-          console.error("Reset failed:", e);
-        }
-      };
-      
-      // تم تنفيذ التصفير بنجاح بناءً على طلب المستخدم
-      performReset(); 
-      
       loadAllData();
       const statusInterval = setInterval(checkCurrentStatus, 30000);
       return () => clearInterval(statusInterval);
@@ -285,7 +272,7 @@ const App: React.FC = () => {
           />
         );
         case 'reports': return <ReportsGenerator requests={safeRequests} agents={safeAgents} systems={safeSystems} />;
-        case 'admin-profile': return <AdminProfile user={currentUser} onUpdate={handleUpdateProfile} />;
+        case 'admin-profile': return <AdminProfile user={currentUser} onUpdate={handleUpdateProfile} onResetData={loadAllData} />;
         default: return <AdminDashboard requests={safeRequests} agents={safeAgents} systems={safeSystems} />;
       }
     }

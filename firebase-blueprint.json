@@ -1,0 +1,113 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account for a Field Agent or Board Administrator",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "username": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "password": { "type": "string" },
+        "role": { "type": "string", "enum": ["ADMIN", "SUPERVISOR", "FOLLOW_UP", "TECHNICAL", "AGENT"] },
+        "phone": { "type": "string" },
+        "city": { "type": "string" },
+        "avatar": { "type": "string" },
+        "status": { "type": "string", "enum": ["ACTIVE", "SUSPENDED"] }
+      },
+      "required": ["id", "name", "username", "role", "status"]
+    },
+    "SystemProduct": {
+      "title": "System Product",
+      "description": "Information about a field software system available for schools with tier pricing",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "tiers": {
+          "type": "array",
+          "description": "Collection of subscription pricing configurations for a system"
+        }
+      },
+      "required": ["id", "name", "description"]
+    },
+    "SalesRequest": {
+      "title": "Field Sales Request",
+      "description": "A visitation or system request reported by a field agent to board admin",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "agentId": { "type": "string" },
+        "agentName": { "type": "string" },
+        "institutionName": { "type": "string" },
+        "systemId": { "type": "string" },
+        "systemName": { "type": "string" },
+        "subscriptionType": { "type": "string" },
+        "location": { "type": "string" },
+        "contactName": { "type": "string" },
+        "contactPhone": { "type": "string" },
+        "status": { "type": "string", "enum": ["PENDING", "ACCEPTED", "REJECTED", "NEED_INFO"] },
+        "rejectionReason": { "type": "string" },
+        "adminNote": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "agentId", "agentName", "institutionName", "systemId", "systemName", "status", "createdAt", "updatedAt"]
+    },
+    "Institution": {
+      "title": "Visited School/Institution",
+      "description": "A persistent archive of schools and educational institutions visited/engaged in the field",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "city": { "type": "string" },
+        "address": { "type": "string" },
+        "lastVisitedBy": { "type": "string" },
+        "lastVisitDate": { "type": "string" },
+        "offeredSystem": { "type": "string" },
+        "status": { "type": "string", "enum": ["CUSTOMER", "INTERESTED", "NOT_INTERESTED", "REJECTED", "LATER"] }
+      },
+      "required": ["id", "name", "city", "address", "lastVisitedBy", "lastVisitDate", "status"]
+    },
+    "Notification": {
+      "title": "User Notification",
+      "description": "Status alert sent to a Field Agent regarding request approval/rejection",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["SUCCESS", "DANGER", "INFO"] },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "title", "message", "type", "isRead", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Collection of all system users including admins, supervision nodes, and deployment agents"
+    },
+    "systems": {
+      "schema": { "$ref": "#/entities/SystemProduct" },
+      "description": "Registered systems available for school installation"
+    },
+    "requests": {
+      "schema": { "$ref": "#/entities/SalesRequest" },
+      "description": "Operational pipeline tracking log of field agent customer visits and requests"
+    },
+    "institutions": {
+      "schema": { "$ref": "#/entities/Institution" },
+      "description": "Registry of field schools mapped by the team"
+    },
+    "notifications": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "Transactional messages destined for active field agents"
+    }
+  }
+}

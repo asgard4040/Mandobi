@@ -22,10 +22,15 @@ const PublicInstitutionsList: React.FC<PublicInstitutionsListProps> = ({ institu
     offeredSystem: ''
   });
 
-  const filtered = institutions.filter(i => 
-    i.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    i.city.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filtered = institutions.filter(i => {
+    const name = i.name || '';
+    const city = i.city || '';
+    return name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           city.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
+  console.log("Institutions list rendered with count:", institutions.length);
+  console.log("Filtered count:", filtered.length);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,9 +53,9 @@ const PublicInstitutionsList: React.FC<PublicInstitutionsListProps> = ({ institu
 
   return (
     <div className="space-y-6 pb-20">
-      <div className="bg-[#0A0A0A] p-8 rounded-[2.5rem] border border-white/5 flex flex-col lg:flex-row lg:items-center justify-between gap-6 shadow-2xl">
+      <div className="bg-[#0A0A0A] p-6 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] border border-white/5 flex flex-col lg:flex-row lg:items-center justify-between gap-6 shadow-2xl">
         <div className="space-y-1">
-          <h3 className="text-2xl font-black text-white tracking-tighter uppercase italic">مستودع البيانات الميدانية</h3>
+          <h3 className="text-xl sm:text-2xl font-black text-white tracking-tighter uppercase italic">المدارس المزارة</h3>
           <p className="text-[9px] text-gray-600 font-black uppercase tracking-[0.4em]">Field Intelligence Registry</p>
         </div>
         
@@ -61,7 +66,7 @@ const PublicInstitutionsList: React.FC<PublicInstitutionsListProps> = ({ institu
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder="ابحث عن مدرسة أو مدينة..."
-              className="w-full pl-12 pr-6 py-4 rounded-2xl bg-black border border-white/5 text-white outline-none focus:border-white transition-all font-bold text-sm"
+              className="w-full pl-10 sm:pl-12 pr-6 py-3.5 sm:py-4 rounded-xl sm:rounded-2xl bg-black border border-white/5 text-white outline-none focus:border-white transition-all font-bold text-xs sm:text-sm"
             />
             <div className="absolute top-1/2 left-4 -translate-y-1/2 text-gray-600">
               {ICONS.Search}
@@ -70,7 +75,7 @@ const PublicInstitutionsList: React.FC<PublicInstitutionsListProps> = ({ institu
           <button 
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="bg-white text-black px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-all active:scale-95 whitespace-nowrap"
+            className="bg-white text-black px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-[0.3em] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-all active:scale-95 whitespace-nowrap"
           >
             تسجيل زيارة جديدة
           </button>
@@ -79,15 +84,15 @@ const PublicInstitutionsList: React.FC<PublicInstitutionsListProps> = ({ institu
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtered.map((inst) => (
-          <div key={inst.id} className="bg-[#0A0A0A] p-8 rounded-[2.5rem] border border-white/5 flex flex-col gap-6 group hover:border-white/10 transition-all shadow-lg relative overflow-hidden">
+          <div key={inst.id} className="bg-[#0A0A0A] p-6 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] border border-white/5 flex flex-col gap-6 group hover:border-white/10 transition-all shadow-lg relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 blur-3xl -mr-12 -mt-12 group-hover:bg-white/10 transition-all"></div>
             
             <div className="flex items-start justify-between">
-              <div className="w-14 h-14 bg-black border border-white/5 rounded-2xl flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition-all">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-black border border-white/5 rounded-xl sm:rounded-2xl flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition-all">
                 {ICONS.Institutions}
               </div>
               <div className="flex items-center gap-2">
-                <span className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${
+                <span className={`px-3 sm:px-4 py-1.5 rounded-full text-[7px] sm:text-[8px] font-black uppercase tracking-widest border ${
                   inst.status === 'CUSTOMER' ? 'bg-white text-black border-white' : 'bg-black text-gray-500 border-white/5'
                 }`}>
                   {inst.status === 'CUSTOMER' ? 'عميل نشط' : 'تمت الزيارة'}
@@ -97,8 +102,8 @@ const PublicInstitutionsList: React.FC<PublicInstitutionsListProps> = ({ institu
 
             <div className="space-y-2">
               <h4 className="font-black text-xl text-white tracking-tighter uppercase">{inst.name}</h4>
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest flex items-center gap-2">
-                {ICONS.Location} {inst.city} - {inst.address}
+              <p className="text-[9px] sm:text-[10px] text-gray-500 font-bold uppercase tracking-widest flex items-center gap-2">
+                {ICONS.Location} {inst.city}
               </p>
               {inst.offeredSystem && (
                 <div className="mt-2 flex items-center gap-2">

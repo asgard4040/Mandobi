@@ -82,77 +82,102 @@ const SystemsManager: React.FC<SystemsManagerProps> = ({ systems, onCreate, onUp
   };
 
   return (
-    <div className="space-y-8 pb-20">
-      <div className="flex flex-col md:flex-row items-center justify-between bg-[#0A0A0A] p-10 rounded-[3rem] border border-[#1A1A1A] gap-6">
-        <div>
-          <h3 className="text-3xl font-black text-white tracking-tighter uppercase italic">هندسة الأنظمة والاشتراكات</h3>
-          <p className="text-[10px] text-gray-600 mt-2 font-black uppercase tracking-[0.4em]">Dynamic Pricing & Tier Matrix</p>
+    <div className="space-y-10 pb-24">
+      {/* Header Section with Stats */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-[#0A0A0A] p-6 sm:p-10 lg:p-12 rounded-[2.5rem] sm:rounded-[3.5rem] border border-white/5 flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-40 h-40 bg-white/5 blur-3xl -ml-20 -mt-20"></div>
+          <div className="relative z-10">
+            <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tighter uppercase italic">الأنظمة والأسعار</h3>
+            <p className="text-[10px] text-gray-600 mt-2 font-black uppercase tracking-[0.5em]">Dynamic Pricing & Tier Matrix</p>
+          </div>
+          <button 
+            onClick={() => { resetForm(); setIsModalOpen(true); }}
+            className="relative z-10 bg-white text-black px-10 py-5 sm:px-12 sm:py-6 rounded-[1.5rem] sm:rounded-[2rem] text-[10px] sm:text-[11px] font-black uppercase tracking-[0.4em] hover:shadow-[0_0_50px_rgba(255,255,255,0.2)] transition-all active:scale-95 w-full md:w-auto text-center italic"
+          >
+            إضافة نظام جديد +
+          </button>
         </div>
-        <button 
-          onClick={() => { resetForm(); setIsModalOpen(true); }}
-          className="bg-white text-black px-12 py-5 rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.4em] hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] transition-all active:scale-95 w-full md:w-auto text-center"
-        >
-          إضافة نظام جديد
-        </button>
+
+        <div className="bg-[#0A0A0A] p-6 sm:p-10 rounded-[2.5rem] sm:rounded-[3.5rem] border border-white/5 flex flex-col justify-center items-center text-center shadow-2xl">
+          <p className="text-[10px] text-gray-700 font-black uppercase tracking-[0.4em] mb-2">إجمالي الأنظمة النشطة</p>
+          <div className="text-5xl sm:text-6xl font-black text-white tracking-tighter italic">{(systems || []).length}</div>
+          <p className="text-[8px] text-gray-800 font-black uppercase tracking-widest mt-4">Operational Systems Protocol</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
         {(systems || []).map(sys => (
-          <div key={sys.id} className="bg-[#0A0A0A] rounded-[3.5rem] border border-[#1A1A1A] overflow-hidden flex flex-col group hover:border-white/20 transition-all duration-500 relative">
-            <div className="p-10 border-b border-[#111]">
-              <div className="flex items-start justify-between mb-6">
-                <div className="flex items-center gap-5">
-                  <div className="w-16 h-16 bg-black border border-[#222] rounded-[1.5rem] flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition-all">
+          <div key={sys.id} className="bg-[#0A0A0A] rounded-[2.5rem] sm:rounded-[4rem] border border-white/5 overflow-hidden flex flex-col group hover:border-white/10 transition-all duration-700 shadow-2xl relative">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/[0.02] blur-[100px] -mr-32 -mt-32 group-hover:bg-white/[0.05] transition-all"></div>
+            
+            <div className="p-8 sm:p-12 border-b border-white/[0.03] relative z-10">
+              <div className="flex items-start justify-between mb-8">
+                <div className="flex items-center gap-4 sm:gap-6">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-black border border-white/5 rounded-[1.5rem] sm:rounded-[2rem] flex items-center justify-center text-white/40 group-hover:bg-white group-hover:text-black transition-all duration-500 shadow-xl">
                     {ICONS.Package}
                   </div>
                   <div>
-                    <h4 className="font-black text-2xl text-white tracking-tighter uppercase">{sys.name}</h4>
-                    <p className="text-[9px] text-gray-700 font-black uppercase tracking-widest mt-1">Tiers: {sys.tiers?.length || 0}</p>
+                    <h4 className="font-black text-2xl sm:text-3xl text-white tracking-tighter uppercase italic">{sys.name}</h4>
+                    <div className="flex items-center gap-3 mt-2">
+                      <span className="px-3 py-1 bg-white/5 rounded-lg text-[8px] font-black text-gray-500 uppercase tracking-widest border border-white/5">
+                        {sys.tiers?.length || 0} TIERS
+                      </span>
+                      <span className="w-1 h-1 bg-gray-800 rounded-full"></span>
+                      <span className="text-[8px] text-gray-700 font-black uppercase tracking-widest">ID: {sys.id.slice(0, 8)}</span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-3 relative z-10">
+                <div className="flex gap-2 sm:gap-3">
                    <button 
                     onClick={() => handleOpenEdit(sys)} 
-                    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white hover:text-black rounded-xl transition-all text-[10px] font-black uppercase tracking-tighter"
+                    className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-white/5 hover:bg-white hover:text-black rounded-xl sm:rounded-2xl transition-all shadow-lg"
+                    title="تعديل"
                    >
                     {ICONS.Settings}
-                    <span className="hidden sm:inline">تعديل</span>
                    </button>
                    <button 
                     onClick={() => onDelete(sys.id)} 
-                    className="flex items-center gap-2 px-4 py-2 bg-red-900/10 text-red-500 hover:bg-red-600 hover:text-white rounded-xl transition-all text-[10px] font-black uppercase tracking-tighter"
+                    className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-red-900/10 text-red-500 hover:bg-red-600 hover:text-white rounded-xl sm:rounded-2xl transition-all shadow-lg"
+                    title="حذف"
                    >
                     {ICONS.X}
-                    <span className="hidden sm:inline">حذف</span>
                    </button>
                 </div>
               </div>
-              <p className="text-sm text-gray-500 font-bold leading-relaxed">{sys.description}</p>
+              <p className="text-sm sm:text-base text-gray-500 font-bold leading-relaxed max-w-xl">{sys.description}</p>
             </div>
             
-            <div className="p-10 space-y-6 flex-1 bg-[#050505]">
-              <h5 className="font-black text-[9px] text-gray-700 uppercase tracking-[0.5em] border-r-2 border-white pr-3">مستويات الاشتراك المتاحة</h5>
-              <div className="space-y-4">
+            <div className="p-8 sm:p-12 space-y-8 flex-1 bg-black/40 relative z-10">
+              <div className="flex items-center gap-4">
+                <h5 className="font-black text-[10px] text-white uppercase tracking-[0.5em]">مصفوفة الأسعار والعمولات</h5>
+                <div className="h-px flex-1 bg-white/5"></div>
+              </div>
+
+              <div className="grid gap-4">
                 {sys.tiers?.map((tier, idx) => (
-                  <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-6 bg-black border border-[#111] rounded-[1.8rem] hover:border-white/10 transition-colors gap-6">
-                    <div className="space-y-1">
-                      <span className="font-black text-[10px] text-white uppercase tracking-widest">{tier.name}</span>
-                      <p className="text-[7px] text-gray-600 font-black uppercase tracking-widest italic">Tier Option {idx + 1}</p>
+                  <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-6 sm:p-8 bg-black border border-white/5 rounded-[2rem] sm:rounded-[2.5rem] hover:border-white/10 transition-all group/tier">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-white/20 group-hover/tier:bg-white transition-all"></div>
+                        <span className="font-black text-sm text-white uppercase tracking-widest">{tier.name}</span>
+                      </div>
+                      <p className="text-[8px] text-gray-700 font-black uppercase tracking-[0.3em] italic ml-5">Subscription Tier Level {idx + 1}</p>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-8 sm:gap-12 flex-1 sm:flex-initial">
-                      <div className="text-right sm:text-left">
+                    <div className="flex items-center gap-8 sm:gap-12 mt-6 sm:mt-0">
+                      <div className="text-right">
                         <p className="text-[9px] text-gray-700 font-black uppercase tracking-widest mb-1">السعر</p>
-                        <div className="flex items-center gap-1">
-                          <span className="font-black text-lg text-white tracking-tighter">{tier.price.toLocaleString()}</span>
-                          <span className="text-[7px] font-black text-gray-600 uppercase">IQD</span>
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-black text-xl sm:text-2xl text-white tracking-tighter italic">{tier.price.toLocaleString()}</span>
+                          <span className="text-[8px] font-black text-gray-600 uppercase">IQD</span>
                         </div>
                       </div>
-                      <div className="text-right sm:text-left border-r border-white/5 pr-8 sm:pr-0 sm:border-r-0">
+                      <div className="text-right border-r border-white/5 pr-8 sm:pr-10">
                         <p className="text-[9px] text-gray-700 font-black uppercase tracking-widest mb-1">العمولة</p>
-                        <div className="flex items-center gap-1">
-                          <span className="font-black text-lg text-white tracking-tighter">{tier.commission.toLocaleString()}</span>
-                          <span className="text-[7px] font-black text-gray-600 uppercase">IQD</span>
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-black text-xl sm:text-2xl text-emerald-500 tracking-tighter italic">{tier.commission.toLocaleString()}</span>
+                          <span className="text-[8px] font-black text-gray-600 uppercase">IQD</span>
                         </div>
                       </div>
                     </div>

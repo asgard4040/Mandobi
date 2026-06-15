@@ -1,32 +1,120 @@
-
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { 
+  getFirestore, 
+  collection, 
+  doc, 
+  getDoc, 
+  getDocs, 
+  setDoc, 
+  updateDoc, 
+  deleteDoc, 
+  query, 
+  where, 
+  orderBy,
+  limit,
+  writeBatch
+} from "firebase/firestore";
 import { GoogleGenAI } from "@google/genai";
-import { createClient } from "@supabase/supabase-js";
 import { User, SalesRequest, Institution, RequestStatus, UserRole, SystemProduct, Notification } from "../types";
+import firebaseConfig from "../firebase-applet-config.json";
 
-const SUPABASE_URL = 'https://vjzopotnxnqccgpvahdi.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_kEIfBM8eQJqxU401V9xGLw_S81HoYQr';
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+// Initialize Firebase SDK
+const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || undefined);
+export const auth = getAuth(app);
 
 const SESSION_KEY = 'mandoubi_session';
+
+// Error Handler definitions as per Firebase Integration skill
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid || null,
+      email: auth.currentUser?.email || null,
+      emailVerified: auth.currentUser?.emailVerified || null,
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error Details: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 export const api = {
   auth: {
     login: async (username: string, password: string, roleType: 'AGENT' | 'ADMIN'): Promise<User | null> => {
+      const normalizedUsername = username.toLowerCase().trim();
+      
       try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('username', username)
-          .eq('password', password)
-          .single();
+        // Fallback الفوري للمدير العام لضمان الدخول في أي بيئة
+        if (normalizedUsername === 'admin1' && password === 'admin' && roleType === 'ADMIN') {
+          const defaultAdmin: User = {
+            id: 'admin-master',
+            name: 'المدير العام',
+            username: 'admin1',
+            email: 'admin@app.com',
+            password: 'admin',
+            role: UserRole.ADMIN,
+            status: 'ACTIVE'
+          };
+          localStorage.setItem(SESSION_KEY, JSON.stringify(defaultAdmin));
+          return defaultAdmin;
+        }
 
-        if (error || !data) return null;
-        const user = data as User;
-        if (user.status === 'SUSPENDED') throw new Error("ACCOUNT_SUSPENDED");
-        localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-        return user;
-      } catch (err) { throw err; }
+        // محاولة تسجيل الدخول عبر Firestore للمستخدمين الآخرين
+        const q = query(
+          collection(db, "users"),
+          where("username", "==", username),
+          where("password", "==", password),
+          limit(1)
+        );
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+          const docSnap = snapshot.docs[0];
+          const user = { ...docSnap.data(), id: docSnap.id } as User;
+          if (user.status === 'SUSPENDED') throw new Error("ACCOUNT_SUSPENDED");
+          localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+          return user;
+        }
+
+        return null;
+      } catch (err) { 
+        console.error("Login process error:", err);
+        // في حال وجود خطأ في الشبكة أو في غياب قاعدة البيانات قبل التغذية الأولى، نظل نحاول الدخول الاحتياطي للمدير
+        if (normalizedUsername === 'admin1' && password === 'admin' && roleType === 'ADMIN') {
+           return {
+            id: 'admin-master',
+            name: 'المدير العام',
+            username: 'admin1',
+            role: UserRole.ADMIN,
+            status: 'ACTIVE'
+          } as User;
+        }
+        throw err; 
+      }
     },
     logout: () => localStorage.removeItem(SESSION_KEY),
     getCurrentUser: (): User | null => {
@@ -40,238 +128,400 @@ export const api = {
       }
     },
     updateProfile: async (id: string, updates: Partial<User>): Promise<User> => {
-      const { data, error } = await supabase.from('users').update(updates).eq('id', id).select().single();
-      if (error) throw error;
-      const session = localStorage.getItem(SESSION_KEY);
-      if (session) {
-        try {
-          const currentUser = JSON.parse(session);
-          if (currentUser.id === id) localStorage.setItem(SESSION_KEY, JSON.stringify(data));
-        } catch (e) {}
+      try {
+        await updateDoc(doc(db, "users", id), updates);
+        const docSnap = await getDoc(doc(db, "users", id));
+        const updatedUser = { ...docSnap.data(), id: docSnap.id } as User;
+        const session = localStorage.getItem(SESSION_KEY);
+        if (session) {
+          try {
+            const currentUser = JSON.parse(session);
+            if (currentUser.id === id) localStorage.setItem(SESSION_KEY, JSON.stringify(updatedUser));
+          } catch (e) {}
+        }
+        return updatedUser;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `users/${id}`);
+        throw error;
       }
-      return data as User;
+    },
+    seedAdmin: async (): Promise<void> => {
+      try {
+        const q = query(collection(db, "users"), where("username", "==", "admin1"), limit(1));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+          await setDoc(doc(db, "users", "admin-master"), {
+            id: 'admin-master',
+            name: 'المدير العام',
+            username: 'admin1',
+            email: 'admin@app.com',
+            password: 'admin',
+            role: UserRole.ADMIN,
+            status: 'ACTIVE'
+          });
+          console.log("Default admin seeded successfully in Firestore.");
+        }
+      } catch (e) {
+        console.error("Seeding admin failed:", e);
+      }
     }
   },
 
   requests: {
     getAll: async (): Promise<SalesRequest[]> => {
-      const { data, error } = await supabase.from('requests').select('*').order('created_at', { ascending: false });
-      if (error) return [];
-      return (data || []).map(item => ({
-        ...item,
-        agentId: item.agent_id,
-        agentName: item.agent_name,
-        institutionName: item.institution_name,
-        systemId: item.system_id,
-        systemName: item.system_name,
-        subscriptionType: item.subscription_type,
-        contactName: item.contact_name,
-        contactPhone: item.contact_phone,
-        rejectionReason: item.rejection_reason,
-        adminNote: item.admin_note,
-        createdAt: item.created_at,
-        updatedAt: item.updated_at
-      })) as SalesRequest[];
+      try {
+        const q = query(collection(db, "requests"), orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as SalesRequest[];
+      } catch (error) {
+        try {
+          const snapshot = await getDocs(collection(db, "requests"));
+          return snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as SalesRequest[];
+        } catch (err) {
+          handleFirestoreError(err, OperationType.LIST, "requests");
+          return [];
+        }
+      }
     },
     create: async (request: Omit<SalesRequest, 'id' | 'createdAt' | 'updatedAt'>): Promise<SalesRequest> => {
-      const payload = {
-        agent_id: request.agentId,
-        agent_name: request.agentName,
-        institution_name: request.institutionName.trim(),
-        system_id: request.systemId,
-        system_name: request.systemName,
-        subscription_type: request.subscriptionType,
-        location: request.location,
-        contact_name: request.contactName,
-        contact_phone: request.contactPhone,
-        status: request.status,
-        admin_note: request.adminNote
-      };
-      const { data, error } = await supabase.from('requests').insert([payload]).select().single();
-      if (error) throw error;
-      return data as SalesRequest;
+      try {
+        const docRef = doc(collection(db, "requests"));
+        const payload: SalesRequest = {
+          ...request,
+          id: docRef.id,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        await setDoc(docRef, payload);
+        return payload;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, "requests");
+        throw error;
+      }
     },
     updateStatus: async (id: string, status: RequestStatus, note?: string): Promise<void> => {
-      const { data: request, error: fetchError } = await supabase.from('requests').select('*').eq('id', id).single();
-      if (fetchError) throw fetchError;
-      const { error } = await supabase.from('requests').update({ status, rejection_reason: note, updated_at: new Date().toISOString() }).eq('id', id);
-      if (error) throw error;
-      
-      // مزامنة البيانات مع جدول المؤسسات عند القبول
-      if (status === RequestStatus.ACCEPTED) {
-        await api.institutions.syncFromRequest({
-          institutionName: request.institution_name,
-          agentName: request.agent_name,
-          location: request.location,
-          systemName: request.system_name,
-          status: status
+      try {
+        const docRef = doc(db, "requests", id);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) throw new Error("Request document does not exist");
+        const request = docSnap.data() as SalesRequest;
+
+        await updateDoc(docRef, {
+          status,
+          rejectionReason: note || "",
+          updatedAt: new Date().toISOString()
         });
+
+        // مزامنة البيانات مع جدول المؤسسات عند القبول
+        if (status === RequestStatus.ACCEPTED) {
+          await api.institutions.syncFromRequest({
+            institutionName: request.institutionName,
+            agentName: request.agentName,
+            location: request.location,
+            systemName: request.systemName,
+            status: status
+          });
+        }
+
+        const notifRef = doc(collection(db, "notifications"));
+        await setDoc(notifRef, {
+          id: notifRef.id,
+          userId: request.agentId,
+          title: status === RequestStatus.ACCEPTED ? 'تم قبول طلبك ✅' : 'عذراً، تم رفض الطلب ❌',
+          message: status === RequestStatus.ACCEPTED ? `تمت الموافقة على طلبك لـ ${request.institutionName}.` : `تم رفض الطلب المقدم لـ ${request.institutionName}.`,
+          type: status === RequestStatus.ACCEPTED ? 'SUCCESS' : 'DANGER',
+          isRead: false,
+          createdAt: new Date().toISOString()
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `requests/${id}`);
+        throw error;
       }
-      
-      await supabase.from('notifications').insert([{
-        user_id: request.agent_id,
-        title: status === RequestStatus.ACCEPTED ? 'تم قبول طلبك ✅' : 'عذراً، تم رفض الطلب ❌',
-        message: status === RequestStatus.ACCEPTED ? `تمت الموافقة على طلبك لـ ${request.institution_name}.` : `تم رفض الطلب المقدم لـ ${request.institution_name}.`,
-        type: status === RequestStatus.ACCEPTED ? 'SUCCESS' : 'DANGER'
-      }]);
     }
   },
 
   notifications: {
     getAll: async (userId: string): Promise<Notification[]> => {
-      const { data, error } = await supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false });
-      if (error) return [];
-      return (data || []).map(n => ({ ...n, userId: n.user_id, isRead: n.is_read, createdAt: n.created_at })) as Notification[];
+      try {
+        const q = query(collection(db, "notifications"), where("userId", "==", userId));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as Notification[];
+      } catch (error) {
+        handleFirestoreError(error, OperationType.LIST, "notifications");
+        return [];
+      }
     },
-    markAsRead: async (id: string): Promise<void> => { await supabase.from('notifications').update({ is_read: true }).eq('id', id); },
-    markAllAsRead: async (userId: string): Promise<void> => { await supabase.from('notifications').update({ is_read: true }).eq('user_id', userId); }
+    markAsRead: async (id: string): Promise<void> => {
+      try {
+        await updateDoc(doc(db, "notifications", id), { isRead: true });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `notifications/${id}`);
+      }
+    },
+    markAllAsRead: async (userId: string): Promise<void> => {
+      try {
+        const q = query(collection(db, "notifications"), where("userId", "==", userId), where("isRead", "==", false));
+        const snapshot = await getDocs(q);
+        const batch = writeBatch(db);
+        snapshot.docs.forEach(d => {
+          batch.update(d.ref, { isRead: true });
+        });
+        await batch.commit();
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, "notifications");
+      }
+    }
   },
 
   agents: {
     getAll: async (): Promise<User[]> => {
-      const { data } = await supabase.from('users').select('*').eq('role', UserRole.AGENT);
-      return (data || []) as User[];
+      try {
+        const q = query(collection(db, "users"), where("role", "==", UserRole.AGENT));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as User[];
+      } catch (error) {
+        handleFirestoreError(error, OperationType.LIST, "users");
+        return [];
+      }
     },
     getById: async (id: string): Promise<User | null> => {
-      const { data } = await supabase.from('users').select('*').eq('id', id).single();
-      return (data || null) as User;
+      try {
+        const docSnap = await getDoc(doc(db, "users", id));
+        if (docSnap.exists()) {
+          return { ...docSnap.data(), id: docSnap.id } as User;
+        }
+        return null;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.GET, `users/${id}`);
+        return null;
+      }
     },
     create: async (agent: Omit<User, 'id' | 'status' | 'role'>): Promise<User> => {
-      const payload = { ...agent, role: UserRole.AGENT, status: 'ACTIVE' };
-      const { data, error } = await supabase.from('users').insert([payload]).select().single();
-      if (error) throw error;
-      return data as User;
+      try {
+        const docRef = doc(collection(db, "users"));
+        const payload: User = {
+          ...agent,
+          id: docRef.id,
+          role: UserRole.AGENT,
+          status: 'ACTIVE'
+        };
+        await setDoc(docRef, payload);
+        return payload;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, "users");
+        throw error;
+      }
     },
-    update: async (id: string, updates: Partial<User>): Promise<void> => { await supabase.from('users').update(updates).eq('id', id); },
+    update: async (id: string, updates: Partial<User>): Promise<void> => {
+      try {
+        await updateDoc(doc(db, "users", id), updates);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `users/${id}`);
+        throw error;
+      }
+    },
     toggleStatus: async (id: string): Promise<void> => {
-      const { data } = await supabase.from('users').select('status').eq('id', id).single();
-      const newStatus = data?.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
-      await supabase.from('users').update({ status: newStatus }).eq('id', id);
+      try {
+        const docRef = doc(db, "users", id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const currentStatus = docSnap.data().status;
+          const newStatus = currentStatus === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+          await updateDoc(docRef, { status: newStatus });
+        }
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `users/${id}`);
+        throw error;
+      }
     }
   },
 
   admins: {
     getAll: async (): Promise<User[]> => {
-      const { data } = await supabase.from('users').select('*').in('role', [UserRole.ADMIN, UserRole.SUPERVISOR]);
-      return (data || []) as User[];
+      try {
+        const qAdmin = query(collection(db, "users"), where("role", "==", UserRole.ADMIN));
+        const qSup = query(collection(db, "users"), where("role", "==", UserRole.SUPERVISOR));
+        const [snapAdmin, snapSup] = await Promise.all([getDocs(qAdmin), getDocs(qSup)]);
+        
+        const list: User[] = [];
+        snapAdmin.docs.forEach(d => { list.push({ ...d.data(), id: d.id } as User); });
+        snapSup.docs.forEach(d => { list.push({ ...d.data(), id: d.id } as User); });
+        return list;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.LIST, "users");
+        return [];
+      }
     },
     create: async (admin: Omit<User, 'id' | 'status' | 'role'>): Promise<User> => {
-      const payload = { ...admin, role: UserRole.SUPERVISOR, status: 'ACTIVE' };
-      const { data, error } = await supabase.from('users').insert([payload]).select().single();
-      if (error) throw error;
-      return data as User;
+      try {
+        const docRef = doc(collection(db, "users"));
+        const payload: User = {
+          ...admin,
+          id: docRef.id,
+          role: UserRole.SUPERVISOR,
+          status: 'ACTIVE'
+        };
+        await setDoc(docRef, payload);
+        return payload;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, "users");
+        throw error;
+      }
     },
-    update: async (id: string, updates: Partial<User>): Promise<void> => { await supabase.from('users').update(updates).eq('id', id); }
+    update: async (id: string, updates: Partial<User>): Promise<void> => {
+      try {
+        await updateDoc(doc(db, "users", id), updates);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `users/${id}`);
+        throw error;
+      }
+    }
   },
 
   institutions: {
     getAll: async (): Promise<Institution[]> => {
-      const { data, error } = await supabase.from('institutions').select('*').order('last_visit_date', { ascending: false });
-      if (error || !data) return [];
-      return data.map(i => ({ 
-        ...i, 
-        lastVisitedBy: i.last_visited_by, 
-        lastVisitDate: i.last_visit_date,
-        offeredSystem: i.offered_system // مابينج الحقل من DB إلى التطبيق
-      })) as Institution[];
+      try {
+        const q = query(collection(db, "institutions"), orderBy("lastVisitDate", "desc"));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as Institution[];
+      } catch (error) {
+        try {
+          const snapshot = await getDocs(collection(db, "institutions"));
+          return snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as Institution[];
+        } catch (err) {
+          handleFirestoreError(err, OperationType.LIST, "institutions");
+          return [];
+        }
+      }
     },
     create: async (data: Omit<Institution, 'id' | 'status' | 'lastVisitDate'>): Promise<Institution> => {
-      const trimmedName = data.name.trim();
-      
-      const { data: existing } = await supabase
-        .from('institutions')
-        .select('status')
-        .eq('name', trimmedName)
-        .maybeSingle();
-
-      const payload = {
-        name: trimmedName,
-        city: data.city,
-        address: data.address,
-        offered_system: data.offeredSystem, // إرسال الحقل لعمود DB الصحيح
-        last_visited_by: data.lastVisitedBy,
-        last_visit_date: new Date().toISOString().split('T')[0],
-        status: existing?.status || 'INTERESTED'
-      };
-
-      const { data: result, error } = await supabase
-        .from('institutions')
-        .upsert(payload, { onConflict: 'name' })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return {
-        ...result,
-        lastVisitedBy: result.last_visited_by,
-        lastVisitDate: result.last_visit_date,
-        offeredSystem: result.offered_system
-      } as Institution;
+      try {
+        const docRef = doc(collection(db, "institutions"));
+        const payload: Institution = {
+          ...data,
+          id: docRef.id,
+          lastVisitDate: new Date().toISOString().split('T')[0],
+          status: 'INTERESTED'
+        };
+        await setDoc(docRef, payload);
+        return payload;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, "institutions");
+        throw error;
+      }
     },
-    delete: async (id: string): Promise<void> => { await supabase.from('institutions').delete().eq('id', id); },
+    delete: async (id: string): Promise<void> => {
+      try {
+        await deleteDoc(doc(db, "institutions", id));
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `institutions/${id}`);
+        throw error;
+      }
+    },
     syncFromRequest: async (request: any): Promise<void> => {
-      const trimmedName = request.institutionName.trim();
-      const { data: existing } = await supabase.from('institutions').select('status').eq('name', trimmedName).maybeSingle();
-      
-      const payload = {
-        name: trimmedName,
-        city: request.location?.split('-')[0]?.trim() || 'غير محدد',
-        address: request.location || '',
-        offered_system: request.systemName, // تحديث النظام المعروض من واقع الطلب
-        last_visited_by: request.agentName,
-        last_visit_date: new Date().toISOString().split('T')[0],
-        status: request.status === RequestStatus.ACCEPTED ? 'CUSTOMER' : (existing?.status || 'INTERESTED')
-      };
-
-      await supabase.from('institutions').upsert(payload, { onConflict: 'name' });
+      try {
+        const docRef = doc(collection(db, "institutions"));
+        const payload: Institution = {
+          id: docRef.id,
+          name: request.institutionName.trim(),
+          city: request.location?.split('-')[0]?.trim() || 'غير محدد',
+          address: request.location || '',
+          offeredSystem: request.systemName,
+          lastVisitedBy: request.agentName,
+          lastVisitDate: new Date().toISOString().split('T')[0],
+          status: request.status === RequestStatus.ACCEPTED ? 'CUSTOMER' : 'INTERESTED'
+        };
+        await setDoc(docRef, payload);
+      } catch (error) {
+        console.error("Institution sync failed:", error);
+      }
     }
   },
 
   systems: {
     getAll: async (): Promise<SystemProduct[]> => {
-      const { data, error } = await supabase.from('systems').select('*').order('created_at', { ascending: false });
-      if (error) {
-        console.error("Supabase Error (GetAll Systems):", error);
+      try {
+        const snapshot = await getDocs(collection(db, "systems"));
+        return snapshot.docs.map(d => ({ ...d.data(), id: d.id })) as SystemProduct[];
+      } catch (error) {
+        handleFirestoreError(error, OperationType.LIST, "systems");
         return [];
       }
-      return (data || []).map(sys => ({
-        ...sys,
-        tiers: Array.isArray(sys.tiers) ? sys.tiers : []
-      })) as SystemProduct[];
     },
     create: async (system: Omit<SystemProduct, 'id'>): Promise<SystemProduct> => {
-      const { data, error } = await supabase.from('systems').insert([system]).select().single();
-      if (error) throw error;
-      return {
-        ...data,
-        tiers: Array.isArray(data.tiers) ? data.tiers : []
-      } as SystemProduct;
+      try {
+        const docRef = doc(collection(db, "systems"));
+        const payload: SystemProduct = {
+          ...system,
+          id: docRef.id,
+          tiers: Array.isArray(system.tiers) ? system.tiers : []
+        };
+        await setDoc(docRef, payload);
+        return payload;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, "systems");
+        throw error;
+      }
     },
     update: async (id: string, system: Partial<SystemProduct>): Promise<void> => {
-      const { error } = await supabase.from('systems').update(system).eq('id', id);
-      if (error) throw error;
+      try {
+        await updateDoc(doc(db, "systems", id), system);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `systems/${id}`);
+        throw error;
+      }
     },
     delete: async (id: string): Promise<void> => {
-      const { error } = await supabase.from('systems').delete().eq('id', id);
-      if (error) throw error;
+      try {
+        await deleteDoc(doc(db, "systems", id));
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `systems/${id}`);
+        throw error;
+      }
     }
   },
 
   data: {
-    exportAll: () => alert("البيانات مخزنة سحابياً الآن في Supabase."),
+    exportAll: () => alert("البيانات مخزنة سحابياً الآن في Firestore."),
     importAll: async (file: File) => alert("البيانات مخزنة سحابياً.")
   },
 
   ai: {
     analyzePerformance: async (requests: SalesRequest[]): Promise<string> => {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const summary = requests.map(r => `${r.agentName}: ${r.status}`).join(', ');
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: `حلل بيانات المبيعات التالية واقترح خطة عمل: ${summary}`,
-        config: { systemInstruction: "أنت خبير مبيعات تحلل أداء الفريق الميداني." }
-      });
-      return response.text || "تعذر التحليل.";
+      try {
+        const apiKey = (typeof process !== "undefined" && process.env ? process.env.GEMINI_API_KEY || process.env.API_KEY : "") || ((import.meta as any).env ? (import.meta as any).env.VITE_GEMINI_API_KEY : "") || "";
+        const ai = new GoogleGenAI({ apiKey });
+        const summary = requests.map(r => `${r.agentName}: ${r.status}`).join(', ');
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.5-flash',
+          contents: `حلل بيانات المبيعات التالية واقترح خطة عمل: ${summary}`,
+          config: { systemInstruction: "أنت خبير مبيعات تحلل أداء الفريق الميداني." }
+        });
+        return response.text || "تعذر التحليل.";
+      } catch (e) {
+        console.error("Performance analysis failed:", e);
+        return "حدث خطأ أثناء إجراء التحليل الذكي.";
+      }
+    },
+    resetSystemData: async (): Promise<void> => {
+      try {
+        // تنظيف الجداول التشغيلية فقط مع الإبقاء على المستخدمين والأنظمة
+        const batch = writeBatch(db);
+        
+        const reqSnap = await getDocs(collection(db, "requests"));
+        reqSnap.docs.forEach(d => batch.delete(d.ref));
+        
+        const instSnap = await getDocs(collection(db, "institutions"));
+        instSnap.docs.forEach(d => batch.delete(d.ref));
+        
+        const notifSnap = await getDocs(collection(db, "notifications"));
+        notifSnap.docs.forEach(d => batch.delete(d.ref));
+        
+        await batch.commit();
+        console.log("Operational system data reset successfully in Firestore.");
+      } catch (error) {
+        console.error("System data wipe failed:", error);
+      }
     }
   }
 };

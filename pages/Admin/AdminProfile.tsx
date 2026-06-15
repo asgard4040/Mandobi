@@ -7,15 +7,17 @@ import { ICONS } from '../../constants';
 interface AdminProfileProps {
   user: User;
   onUpdate: (updates: Partial<User>) => void;
+  onResetData: () => Promise<void>;
 }
 
-const AdminProfile: React.FC<AdminProfileProps> = ({ user, onUpdate }) => {
+const AdminProfile: React.FC<AdminProfileProps> = ({ user, onUpdate, onResetData }) => {
   const [formData, setFormData] = useState({
     name: user.name,
     username: user.username,
     password: user.password || '',
   });
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +40,21 @@ const AdminProfile: React.FC<AdminProfileProps> = ({ user, onUpdate }) => {
     if (file) {
       if (confirm('سيؤدي استيراد الملف إلى استبدال جميع البيانات الحالية. هل تريد المتابعة؟')) {
         api.data.importAll(file);
+      }
+    }
+  };
+
+  const handleReset = async () => {
+    if (confirm('تنبيه هام للغاية! هل أنت متأكد من رغبتك في تصفير البيانات التشغيلية؟ هذا الإجراء سيقوم بحذف كافة طلبات المبيعات، الزيارات الميدانية، والاشعارات سحابياً بشكل كامل ونهائي ولا يمكن التراجع عنه.')) {
+      setIsResetting(true);
+      try {
+        await api.ai.resetSystemData();
+        await onResetData();
+        alert('تم تصفير كافة البيانات التشغيلية بنجاح.');
+      } catch (e: any) {
+        alert('فشل تصفير البيانات: ' + e.message);
+      } finally {
+        setIsResetting(false);
       }
     }
   };
@@ -135,6 +152,19 @@ const AdminProfile: React.FC<AdminProfileProps> = ({ user, onUpdate }) => {
                   <span className="font-black text-[10px] uppercase tracking-[0.3em]">استيراد قاعدة بيانات خارجية</span>
                 </div>
              </div>
+
+             <button 
+              onClick={handleReset}
+              disabled={isResetting}
+              className="w-full flex items-center justify-center gap-4 py-6 rounded-3xl bg-red-950/20 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-black hover:border-red-500 transition-all group"
+             >
+                <span className="w-10 h-10 bg-red-500/10 group-hover:bg-black/10 rounded-xl flex items-center justify-center font-bold">
+                  ⚠️
+                </span>
+                <span className="font-black text-[10px] uppercase tracking-[0.3em]">
+                  {isResetting ? 'جاري تصفير النظام...' : 'تصفير كافة البيانات التشغيلية'}
+                </span>
+             </button>
           </div>
 
           <div className="mt-12 pt-8 border-t border-white/5 text-center">
