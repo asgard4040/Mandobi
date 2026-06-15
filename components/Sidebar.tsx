@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ICONS } from '../constants';
 import { UserRole } from '../types';
 import { api } from '../services/api';
+import novx from "./novx.png";
 
 interface SidebarProps {
   role: UserRole;
@@ -81,7 +82,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, userNa
             <div className="absolute -inset-1 bg-white rounded-[2rem] blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
             <div className="relative w-20 h-20 bg-black border border-[#222] rounded-[2rem] flex items-center justify-center overflow-hidden shadow-2xl transition-transform group-hover:scale-105">
               <img 
-                src="https://picsum.photos/seed/novx/400/400" 
+                src={novx}  
                 alt="NOVX Logo" 
                 className="w-full h-full object-contain p-2"
                 referrerPolicy="no-referrer"
