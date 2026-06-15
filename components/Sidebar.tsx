@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ICONS } from '../constants';
 import { UserRole } from '../types';
 import { api } from '../services/api';
-import novx from "./novx.png";
+import novx from "./novx-1.png";
 
 interface SidebarProps {
   role: UserRole;
