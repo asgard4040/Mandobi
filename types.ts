@@ -67,6 +67,7 @@ export interface Institution {
   lastVisitDate: string;
   offeredSystem?: string; // الحقل الجديد
   status: 'CUSTOMER' | 'INTERESTED' | 'NOT_INTERESTED' | 'REJECTED' | 'LATER';
+  rejectionReason?: string;
 }
 
 export interface Notification {

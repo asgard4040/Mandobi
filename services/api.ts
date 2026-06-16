@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { 
-  getFirestore, 
+  initializeFirestore, 
   collection, 
   doc, 
   getDoc, 
@@ -21,7 +21,9 @@ import firebaseConfig from "../firebase-applet-config.json";
 
 // Initialize Firebase SDK
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || undefined);
+export const db = initializeFirestore(app, {
+  experimentalAutoDetectLongPolling: true
+}, firebaseConfig.firestoreDatabaseId || undefined);
 export const auth = getAuth(app);
 
 const SESSION_KEY = 'mandoubi_session';
@@ -64,12 +66,12 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 
 export const api = {
   auth: {
-    login: async (username: string, password: string, roleType: 'AGENT' | 'ADMIN'): Promise<User | null> => {
+    login: async (username: string, password: string): Promise<User | null> => {
       const normalizedUsername = username.toLowerCase().trim();
       
       try {
         // Fallback الفوري للمدير العام لضمان الدخول في أي بيئة
-        if (normalizedUsername === 'admin1' && password === 'admin' && roleType === 'ADMIN') {
+        if (normalizedUsername === 'admin1' && password === 'admin') {
           const defaultAdmin: User = {
             id: 'admin-master',
             name: 'المدير العام',
@@ -104,7 +106,7 @@ export const api = {
       } catch (err) { 
         console.error("Login process error:", err);
         // في حال وجود خطأ في الشبكة أو في غياب قاعدة البيانات قبل التغذية الأولى، نظل نحاول الدخول الاحتياطي للمدير
-        if (normalizedUsername === 'admin1' && password === 'admin' && roleType === 'ADMIN') {
+        if (normalizedUsername === 'admin1' && password === 'admin') {
            return {
             id: 'admin-master',
             name: 'المدير العام',
@@ -476,6 +478,29 @@ export const api = {
         await deleteDoc(doc(db, "systems", id));
       } catch (error) {
         handleFirestoreError(error, OperationType.DELETE, `systems/${id}`);
+        throw error;
+      }
+    }
+  },
+
+  settings: {
+    get: async (): Promise<{ logoUrl?: string; supportPhone?: string }> => {
+      try {
+        const docSnap = await getDoc(doc(db, "settings", "global"));
+        if (docSnap.exists()) {
+          return docSnap.data() as { logoUrl?: string; supportPhone?: string };
+        }
+        return { logoUrl: '', supportPhone: '' };
+      } catch (error) {
+        console.error("Failed to fetch settings, returning fallback:", error);
+        return { logoUrl: '', supportPhone: '' };
+      }
+    },
+    update: async (data: { logoUrl?: string; supportPhone?: string }): Promise<void> => {
+      try {
+        await setDoc(doc(db, "settings", "global"), data, { merge: true });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, "settings/global");
         throw error;
       }
     }

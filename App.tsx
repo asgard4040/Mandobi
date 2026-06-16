@@ -21,6 +21,8 @@ import PublicInstitutionsList from './pages/Agent/PublicInstitutionsList';
 import AgentProfile from './pages/Agent/AgentProfile';
 import Notifications from './pages/Agent/Notifications';
 import Login from './pages/Login';
+import SettingsPage from './pages/Admin/SettingsPage';
+import HelpPage from './pages/Agent/HelpPage';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(api.auth.getCurrentUser());
@@ -34,9 +36,23 @@ const App: React.FC = () => {
   const [agents, setAgents] = useState<User[]>([]);
   const [admins, setAdmins] = useState<User[]>([]);
 
+  const [logoUrl, setLogoUrl] = useState('');
+  const [supportPhone, setSupportPhone] = useState('');
+
+  const loadSettings = async () => {
+    try {
+      const res = await api.settings.get();
+      setLogoUrl(res.logoUrl || '');
+      setSupportPhone(res.supportPhone || '');
+    } catch (e) {
+      console.error("Error loading settings:", e);
+    }
+  };
+
   useEffect(() => {
     // تأمين وجود المدير الافتراضي في قاعدة البيانات السحابية
     api.auth.seedAdmin();
+    loadSettings();
 
     if (currentUser) {
       loadAllData();
@@ -82,10 +98,10 @@ const App: React.FC = () => {
     }
   };
 
-  const handleLogin = async (username: string, password: string, type: 'AGENT' | 'ADMIN') => {
+  const handleLogin = async (username: string, password: string) => {
     setIsLoading(true);
     try {
-      const user = await api.auth.login(username, password, type);
+      const user = await api.auth.login(username, password);
       if (user) {
         setCurrentUser(user);
         setActiveTab('dashboard');
@@ -161,7 +177,7 @@ const App: React.FC = () => {
   };
 
   const renderContent = () => {
-    if (!currentUser) return <Login onLogin={handleLogin} />;
+    if (!currentUser) return <Login onLogin={handleLogin} logoUrlSetting={logoUrl} />;
     
     // Safety check for all data variables
     const safeRequests = Array.isArray(requests) ? requests : [];
@@ -203,6 +219,7 @@ const App: React.FC = () => {
           />
         );
         case 'profile': return <AgentProfile user={currentUser} requests={safeRequests.filter(r => r.agentId === currentUser.id)} systems={safeSystems} />;
+        case 'help': return <HelpPage supportPhone={supportPhone} />;
         default: return <AgentHome user={currentUser} requests={safeRequests} systems={safeSystems} />;
       }
     } 
@@ -273,6 +290,7 @@ const App: React.FC = () => {
         );
         case 'reports': return <ReportsGenerator requests={safeRequests} agents={safeAgents} systems={safeSystems} />;
         case 'admin-profile': return <AdminProfile user={currentUser} onUpdate={handleUpdateProfile} onResetData={loadAllData} />;
+        case 'settings': return <SettingsPage onSettingsSaved={loadSettings} logoUrlSetting={logoUrl} supportPhoneSetting={supportPhone} />;
         default: return <AdminDashboard requests={safeRequests} agents={safeAgents} systems={safeSystems} />;
       }
     }
@@ -289,6 +307,7 @@ const App: React.FC = () => {
           onLogout={handleLogout}
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
+          logoUrl={logoUrl}
         />
       )}
       <main className={`${currentUser ? 'lg:pr-64' : ''} transition-all duration-700 min-h-screen relative`}>

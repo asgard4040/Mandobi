@@ -70,14 +70,14 @@ const SendRequest: React.FC<SendRequestProps> = ({ systems, onSend }) => {
         <form onSubmit={handleSubmit} className="space-y-8 sm:space-y-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
             <div className="md:col-span-2 space-y-2 sm:space-y-3">
-              <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mr-4">المؤسسة المستهدفة</label>
+              <label className="text-[9px] sm:text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mr-4">العميل المستهدف (مطعم، شركة، مدرسة...)</label>
               <input 
                 required
                 type="text" 
                 value={formData.institutionName}
                 onChange={e => setFormData({...formData, institutionName: e.target.value})}
                 className="w-full px-6 sm:px-8 py-4 sm:py-5 rounded-xl sm:rounded-[2rem] bg-black border border-white/5 text-white focus:border-white outline-none transition-all font-bold text-sm sm:text-base"
-                placeholder="TARGET INSTITUTION"
+                placeholder="اسم العميل أو الجهة المستهدفة"
               />
             </div>
 

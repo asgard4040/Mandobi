@@ -19,7 +19,8 @@ const PublicInstitutionsList: React.FC<PublicInstitutionsListProps> = ({ institu
     name: '',
     city: '',
     address: '',
-    offeredSystem: ''
+    offeredSystem: '',
+    rejectionReason: ''
   });
 
   const filtered = institutions.filter(i => {
@@ -29,7 +30,7 @@ const PublicInstitutionsList: React.FC<PublicInstitutionsListProps> = ({ institu
            city.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  console.log("Institutions list rendered with count:", institutions.length);
+  console.log("Clients list rendered with count:", institutions.length);
   console.log("Filtered count:", filtered.length);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,7 +44,7 @@ const PublicInstitutionsList: React.FC<PublicInstitutionsListProps> = ({ institu
         lastVisitedBy: currentUserName
       });
       setIsModalOpen(false);
-      setFormData({ name: '', city: '', address: '', offeredSystem: '' });
+      setFormData({ name: '', city: '', address: '', offeredSystem: '', rejectionReason: '' });
     } catch (error) {
       console.error("Submission error:", error);
     } finally {
@@ -55,7 +56,7 @@ const PublicInstitutionsList: React.FC<PublicInstitutionsListProps> = ({ institu
     <div className="space-y-6 pb-20">
       <div className="bg-[#0A0A0A] p-6 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] border border-white/5 flex flex-col lg:flex-row lg:items-center justify-between gap-6 shadow-2xl">
         <div className="space-y-1">
-          <h3 className="text-xl sm:text-2xl font-black text-white tracking-tighter uppercase italic">المدارس المزارة</h3>
+          <h3 className="text-xl sm:text-2xl font-black text-white tracking-tighter uppercase italic">العملاء المزارون</h3>
           <p className="text-[9px] text-gray-600 font-black uppercase tracking-[0.4em]">Field Intelligence Registry</p>
         </div>
         
@@ -65,7 +66,7 @@ const PublicInstitutionsList: React.FC<PublicInstitutionsListProps> = ({ institu
               type="text"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              placeholder="ابحث عن مدرسة أو مدينة..."
+              placeholder="ابحث عن عميل أو مدينة..."
               className="w-full pl-10 sm:pl-12 pr-6 py-3.5 sm:py-4 rounded-xl sm:rounded-2xl bg-black border border-white/5 text-white outline-none focus:border-white transition-all font-bold text-xs sm:text-sm"
             />
             <div className="absolute top-1/2 left-4 -translate-y-1/2 text-gray-600">
@@ -111,6 +112,12 @@ const PublicInstitutionsList: React.FC<PublicInstitutionsListProps> = ({ institu
                   <span className="text-[10px] font-black text-white uppercase italic">{inst.offeredSystem}</span>
                 </div>
               )}
+              {inst.rejectionReason && (
+                <div className="mt-2 flex flex-col gap-1 bg-red-950/20 border border-red-500/10 p-3 rounded-xl">
+                  <span className="text-[7px] font-black text-red-400 uppercase tracking-widest">سبب الرفض:</span>
+                  <span className="text-[10px] font-bold text-red-100">{inst.rejectionReason}</span>
+                </div>
+              )}
             </div>
 
             <div className="pt-6 border-t border-white/5 flex flex-col gap-3">
@@ -142,7 +149,7 @@ const PublicInstitutionsList: React.FC<PublicInstitutionsListProps> = ({ institu
             <form onSubmit={handleSubmit} className="p-12 space-y-10">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-3xl font-black text-white tracking-tighter uppercase italic">رصد مدرسة جديدة</h4>
+                  <h4 className="text-3xl font-black text-white tracking-tighter uppercase italic">رصد عميل جديد</h4>
                   <p className="text-[9px] text-gray-600 font-black uppercase tracking-[0.4em] mt-1">Deployment Target Setup</p>
                 </div>
                 <button type="button" onClick={() => setIsModalOpen(false)} className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center hover:bg-white hover:text-black transition-all">
@@ -152,8 +159,8 @@ const PublicInstitutionsList: React.FC<PublicInstitutionsListProps> = ({ institu
 
               <div className="space-y-8">
                 <div className="space-y-3">
-                  <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.4em] mr-4">اسم المدرسة</label>
-                  <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-8 py-5 rounded-[2rem] bg-black border border-white/5 text-white focus:border-white outline-none transition-all font-black text-sm" placeholder="اسم المدرسة أو المؤسسة" />
+                  <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.4em] mr-4">اسم العميل / الجهة</label>
+                  <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-8 py-5 rounded-[2rem] bg-black border border-white/5 text-white focus:border-white outline-none transition-all font-black text-sm" placeholder="اسم العميل أو الجهة" />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
@@ -174,6 +181,11 @@ const PublicInstitutionsList: React.FC<PublicInstitutionsListProps> = ({ institu
                 <div className="space-y-3">
                   <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.4em] mr-4">العنوان</label>
                   <input required type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="w-full px-8 py-5 rounded-[2rem] bg-black border border-white/5 text-white focus:border-white outline-none transition-all font-black text-sm" placeholder="الحي - الشارع" />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[9px] font-black text-gray-500 uppercase tracking-[0.4em] mr-4">سبب الرفض (إن وجد)</label>
+                  <textarea value={formData.rejectionReason} onChange={e => setFormData({...formData, rejectionReason: e.target.value})} className="w-full px-8 py-5 rounded-[2rem] bg-black border border-white/5 text-white focus:border-white outline-none transition-all font-black text-sm min-h-[100px] resize-none" placeholder="اكتب سبب الرفض في حال تم رفض العرض من قبل العميل" />
                 </div>
               </div>
 

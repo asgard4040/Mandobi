@@ -21,7 +21,7 @@ const LeadsManager: React.FC<LeadsManagerProps> = ({ institutions, onDelete }) =
     <div className="space-y-8 pb-20">
       <div className="bg-[#0A0A0A] p-6 sm:p-10 lg:p-12 rounded-[2.5rem] sm:rounded-[3.5rem] border border-white/5 flex flex-col lg:flex-row items-center justify-between gap-8 shadow-2xl">
         <div className="text-center lg:text-right">
-          <h3 className="text-3xl font-black text-white tracking-tighter uppercase italic">المدارس المزارة</h3>
+          <h3 className="text-3xl font-black text-white tracking-tighter uppercase italic">قاعدة بيانات العملاء</h3>
           <p className="text-[10px] text-gray-600 mt-2 font-black uppercase tracking-[0.5em]">Centralized Intelligence Database</p>
         </div>
         
@@ -31,7 +31,7 @@ const LeadsManager: React.FC<LeadsManagerProps> = ({ institutions, onDelete }) =
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             className="w-full pl-14 pr-8 py-5 rounded-[2rem] bg-black border border-white/5 text-white outline-none focus:border-white transition-all font-bold text-sm shadow-inner"
-            placeholder="ابحث عن مدرسة، مدينة، أو عنوان محدد..."
+            placeholder="ابحث عن عميل، مدينة، أو عنوان محدد..."
           />
           <div className="absolute top-1/2 left-6 -translate-y-1/2 text-gray-600">
             {ICONS.Search}
@@ -44,7 +44,7 @@ const LeadsManager: React.FC<LeadsManagerProps> = ({ institutions, onDelete }) =
           <table className="w-full text-right border-collapse min-w-[1000px]">
             <thead>
               <tr className="bg-white/[0.02] border-b border-white/5">
-                <th className="px-8 py-6 font-black text-gray-500 text-[10px] uppercase tracking-[0.4em]">المؤسسة التعليمية</th>
+                <th className="px-8 py-6 font-black text-gray-500 text-[10px] uppercase tracking-[0.4em]">العميل / الجهة</th>
                 <th className="px-8 py-6 font-black text-gray-500 text-[10px] uppercase tracking-[0.4em]">العنوان</th>
                 <th className="px-8 py-6 font-black text-gray-500 text-[10px] uppercase tracking-[0.4em]">النظام المعروض</th>
                 <th className="px-8 py-6 font-black text-gray-500 text-[10px] uppercase tracking-[0.4em]">المسؤول الميداني</th>
@@ -61,7 +61,14 @@ const LeadsManager: React.FC<LeadsManagerProps> = ({ institutions, onDelete }) =
                       <div className="w-10 h-10 rounded-xl bg-black border border-white/5 flex items-center justify-center text-white/40 group-hover:text-white group-hover:border-white/20 transition-all">
                         {ICONS.Institutions}
                       </div>
-                      <span className="font-black text-white text-base tracking-tight">{inst.name}</span>
+                      <div className="flex flex-col">
+                        <span className="font-black text-white text-base tracking-tight">{inst.name}</span>
+                        {inst.rejectionReason && (
+                          <span className="text-[10px] text-red-400 font-bold mt-1 bg-red-950/20 border border-red-500/10 px-2 py-0.5 rounded-md self-start">
+                            سبب الرفض: {inst.rejectionReason}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="px-8 py-6">

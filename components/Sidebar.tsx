@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { ICONS } from '../constants';
 import { UserRole } from '../types';
 import { api } from '../services/api';
-import novx from "./novx-1.png";
 
 interface SidebarProps {
   role: UserRole;
@@ -13,6 +12,7 @@ interface SidebarProps {
   onLogout: () => void;
   isOpen: boolean;
   onClose: () => void;
+  logoUrl?: string;
 }
 
 interface SidebarLink {
@@ -22,7 +22,7 @@ interface SidebarLink {
   badge?: number;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, userName, onLogout, isOpen, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, userName, onLogout, isOpen, onClose, logoUrl }) => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -46,9 +46,10 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, userNa
     { id: 'agents', label: 'إدارة المندوبين', icon: ICONS.Agents },
     { id: 'admins', label: 'إدارة المشرفين', icon: ICONS.Users },
     { id: 'leads', label: 'قاعدة البيانات', icon: ICONS.Institutions },
-    { id: 'systems', label: 'الأنظمة والأسعار', icon: ICONS.Settings },
+    { id: 'systems', label: 'الأنظمة والأسعار', icon: ICONS.Package },
     { id: 'reports', label: 'التقارير', icon: ICONS.Trend },
     { id: 'admin-profile', label: 'الملف الشخصي', icon: ICONS.Profile },
+    { id: 'settings', label: 'الإعدادات', icon: ICONS.Settings },
   ];
 
   const agentLinks: SidebarLink[] = [
@@ -56,8 +57,9 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, userNa
     { id: 'send-request', label: 'ارسال طلب', icon: ICONS.SendRequest },
     { id: 'my-requests', label: 'طلباتي', icon: ICONS.MyRequests },
     { id: 'notifications', label: 'الإشعارات', icon: ICONS.Notification, badge: unreadCount },
-    { id: 'names-list', label: 'اسماء المدارس', icon: ICONS.Institutions },
+    { id: 'names-list', label: 'قاعدة البيانات', icon: ICONS.Institutions },
     { id: 'profile', label: 'الملف الشخصي', icon: ICONS.Profile },
+    { id: 'help', label: 'المساعدة', icon: ICONS.Info },
   ];
 
   const links = role === UserRole.AGENT ? agentLinks : adminLinks;
@@ -80,10 +82,10 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, userNa
         <div className="p-10 flex flex-col items-center">
           <div className="relative group cursor-pointer">
             <div className="absolute -inset-1 bg-white rounded-[2rem] blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
-            <div className="relative w-20 h-20 bg-black border border-[#222] rounded-[2rem] flex items-center justify-center overflow-hidden shadow-2xl transition-transform group-hover:scale-105">
+            <div className="relative w-23 h-23 bg-black border border-[#222] rounded-[2rem] flex items-center justify-center overflow-hidden shadow-2xl transition-transform group-hover:scale-105">
               <img 
-                src={novx}  
-                alt="NOVX Logo" 
+                src={logoUrl || "https://picsum.photos/seed/novx/400/400"} 
+                alt="System Logo" 
                 className="w-full h-full object-contain p-2"
                 referrerPolicy="no-referrer"
               />
